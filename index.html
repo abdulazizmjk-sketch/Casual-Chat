@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Casual Chat</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#5865F2,#1e1f22 45%,#0b0c14);color:#fff}
+
+.hero,.section{padding:24px}.hero{text-align:center;padding:70px 24px 30px}.logo{font-size:46px;font-weight:700;text-shadow:0 8px 20px rgba(0,0,0,.35)}
+.subtitle{max-width:700px;margin:12px auto 0;opacity:.92;line-height:1.7}
+
+.card{background:rgba(255,255,255,.08);backdrop-filter:blur(8px);padding:18px;border-radius:18px;margin:14px 0;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+
+.btn{background:#fff;color:#5865F2;border:none;padding:12px 18px;border-radius:12px;font-weight:700;cursor:pointer}
+input{width:100%;padding:12px;border:none;border-radius:12px;margin:8px 0}
+
+.layout{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:16px;
+  max-width:1100px;
+  margin:auto;
+}
+
+/* Responsive HP */
+@media screen and (max-width:768px){
+  .layout{display:block;}
+  .sidebar{margin-bottom:16px;}
+  .channel{display:inline-block;margin:4px 4px 4px 0;}
+  #chatBox{height:320px;}
+  #chatInput{width:100%;margin-top:8px;}
+  .chat-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  #ownerFab{right:14px;bottom:14px;width:52px;height:52px;}
+}
+
+.sidebar .channel{padding:10px;border-radius:10px;background:rgba(255,255,255,.06);margin:8px 0;cursor:pointer}
+
+.chatHeader{font-size:22px;font-weight:700;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+
+#chatBox{overflow:auto;background:rgba(0,0,0,.18);padding:14px;border-radius:14px;margin-bottom:12px}
+
+#ownerFab{display:none;position:fixed;align-items:center;justify-content:center;font-size:28px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.35);border-radius:50%;background:#5865F2}
+
+#ownerMenu{display:none;position:fixed;right:20px;bottom:90px;background:#1f2937;padding:12px;border-radius:14px;min-width:220px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="logo">💬 Website Casual Chat</div>
+  <p class="subtitle">Tempat ngobrol santai, mabar, belajar, dan seru-seruan bareng komunitas. Join untuk dapat akses channel seru, room staff, dan announcement resmi server.</p>
+</div>
+
+<section class="section" id="access">
+  <div class="card">
+    <h2>🔐 Masuk ke Komunitas</h2>
+    <p>Kenapa harus join? Karena di sini kamu bisa ngobrol santai, masuk banyak channel, ikut event, dan punya profil anonim yang aman.</p>
+    <input id="codeInput" placeholder="Masukkan kode member / secret owner">
+    <button class="btn" onclick="checkCode()">Masuk</button>
+    <p id="result"></p>
+    <div id="ownerPanel" style="display:none">
+      <p>👑 Owner Panel</p>
+      <p>Kode aktif: <b id="liveCode">4821</b></p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="profileSetup" style="display:none">
+  <div class="card">
+    <h2>👤 Buat Profil</h2>
+    <p>⚠️ Jangan gunakan nama atau foto asli.</p>
+    <input id="profileName" placeholder="Nama anonim">
+    <input id="avatarUrl" placeholder="Link avatar (boleh kosong)">
+    <input id="profilePass" type="password" placeholder="Password login">
+    <button class="btn" onclick="saveProfile()">Masuk Chat</button>
+  </div>
+</section>
+
+<section class="section" id="chatApp" style="display:none">
+  <div class="layout">
+    <div class="sidebar card" id="channelList">
+      <div class="channel" onclick="switchChannel('welcome')">🏠 welcome</div>
+      <div class="channel" onclick="switchChannel('announcement')">📢 announcement</div>
+      <div class="channel" onclick="switchChannel('general')">💬 general</div>
+      <div class="channel" onclick="switchChannel('gaming')">🎮 gaming</div>
+      <div class="channel" onclick="switchChannel('staff')">🛡️ staff-room</div>
+    </div>
+
+    <div class="card">
+      <div class="chatHeader" id="chatTitle"># general</div>
+      <div id="me"></div>
+      <div id="chatBox"></div>
+      <input id="chatInput" placeholder="Ketik pesan...">
+      <div class="chat-buttons">
+        <button class="btn" onclick="sendMessage()">Kirim</button>
+        <button class="btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="ownerFab" onclick="toggleOwnerMenu()">👑</div>
+<div id="ownerMenu">
+  <button class="btn" onclick="showCurrentCode()">🔐 Lihat Kode</button>
+  <button class="btn" onclick="manageRoles()">🎭 Roles</button>
+</div>
+
+<script>
+let ACCESS_CODE='4821';
+const OWNER_SECRET='@dzu';
+let currentRole='Guest';
+let currentChannel='general';
+const readOnly=['welcome','announcement'];
+const staffOnly=['staff'];
+
+function generateCode(){return Math.floor(1000+Math.random()*9000).toString();}
+
+function checkCode(){
+ const input=document.getElementById('codeInput').value.trim();
+ const result=document.getElementById('result');
+ if(input===OWNER_SECRET){
+   currentRole='Owner';
+   document.getElementById('ownerPanel').style.display='block';
+   document.getElementById('ownerFab').style.display='flex';
+   document.getElementById('liveCode').textContent=ACCESS_CODE;
+   result.innerHTML='👑 Login owner berhasil';
+   document.getElementById('profileSetup').style.display='block';
+   document.getElementById('profileSetup').scrollIntoView({behavior:'smooth'});
+   return;
+ }
+ if(input===ACCESS_CODE){
+   currentRole='Member';
+   result.innerHTML='✅ Kode benar';
+   ACCESS_CODE=generateCode();
+   document.getElementById('liveCode').textContent=ACCESS_CODE;
+   document.getElementById('profileSetup').style.display='block';
+   document.getElementById('profileSetup').scrollIntoView({behavior:'smooth'});
+   return;
+ }
+ result.innerHTML='❌ Kode salah';
+}
+
+function saveProfile(){
+ const name=document.getElementById('profileName').value.trim();
+ const pass=document.getElementById('profilePass').value.trim();
+ if(name.length<3||pass.length<4){alert('Isi nama dan password dengan benar');return;}
+ let avatar=document.getElementById('avatarUrl').value.trim();
+ if(!avatar){avatar="data:image/svg+xml;utf8,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><rect width='120' height='120' rx='24' fill='#5865F2'/><text x='60' y='68' text-anchor='middle' fill='white' font-size='24'>MEMBER</text></svg>");}
+ const profile={name,pass,avatar,role:currentRole};
+ const msgs=JSON.parse(localStorage.getItem('cc_messages')||'[]');
+ msgs.push({name:'System',role:'BOT',text:`👋 ${name} bergabung ke Casual Chat`,channel:'welcome'});
+ localStorage.setItem('cc_messages',JSON.stringify(msgs.slice(-100)));
+ localStorage.setItem('cc_profile',JSON.stringify(profile));
+ document.getElementById('me').innerHTML=`<img src="${avatar}" style="width:46px;height:46px;border-radius:50%;vertical-align:middle"> <b>${name}</b> (${currentRole})`;
+ document.getElementById('chatApp').style.display='block';
+ switchChannel('general');
+ document.getElementById('chatApp').scrollIntoView({behavior:'smooth'});
+}
+
+function switchChannel(ch){
+ if(staffOnly.includes(ch)&&!['Owner','Admin','Moderator','Helper'].includes(currentRole)){alert('⛔ staff only');return;}
+ currentChannel=ch;loadMessages();
+}
+function loadMessages(){
+ const title=document.getElementById('chatTitle');
+ if(title) title.textContent='# '+currentChannel;
+ const box=document.getElementById('chatBox');
+ const msgs=JSON.parse(localStorage.getItem('cc_messages')||'[]').filter(m=>m.channel===currentChannel);
+ box.innerHTML='<b># '+currentChannel+'</b><hr>'+msgs.map(m=>`<div><b>${m.name}</b> (${m.role})<br>${m.text}</div><br>`).join('');
+ box.scrollTop=box.scrollHeight;
+}
+function sendMessage(){
+ if(readOnly.includes(currentChannel)&&currentRole==='Member'){alert('📖 channel baca saja');return;}
+ const text=document.getElementById('chatInput').value.trim(); if(!text) return;
+ const p=JSON.parse(localStorage.getItem('cc_profile')||'{}');
+ const msgs=JSON.parse(localStorage.getItem('cc_messages')||'[]');
+ msgs.push({name:p.name||'Anon',role:p.role||currentRole,text,channel:currentChannel});
+ localStorage.setItem('cc_messages',JSON.stringify(msgs.slice(-100)));
+ document.getElementById('chatInput').value=''; loadMessages();
+}
+
+function toggleOwnerMenu(){const m=document.getElementById('ownerMenu');m.style.display=m.style.display==='block'?'none':'block';}
+function showCurrentCode(){alert('Kode aktif: '+ACCESS_CODE);} 
+
+// Placeholder manageRoles
+function manageRoles(){
+  const msgs = JSON.parse(localStorage.getItem('cc_profile')||'{}');
+  alert('🎭 Fitur roles akan dibuat nanti.'); // bisa diganti popup asli
+}
+
+function logout(){
+  document.getElementById('chatApp').style.display='none';
+  document.getElementById('profileSetup').style.display='none';
+  document.getElementById('result').innerHTML='';
+}
+</script>
+</body>
+</html>
