@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casual Chat</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#5865F2,#1e1f22);color:#fff;}
+.card{background:rgba(255,255,255,0.08);padding:16px;border-radius:12px;margin:10px;}
+input, select{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:none;}
+.btn{padding:10px 16px;border:none;border-radius:12px;background:#5865F2;color:#fff;font-weight:700;cursor:pointer;margin:4px;}
+.blue-btn{background:#1E90FF;}
+#chatSection{display:none;}
+#chatBox{height:200px;overflow:auto;background:rgba(0,0,0,0.18);padding:10px;border-radius:10px;margin-top:10px;}
+.avatar-img{width:46px;height:46px;border-radius:50%;vertical-align:middle;margin-right:8px;}
+.channel{padding:10px;border-radius:10px;margin:4px 0;cursor:pointer;display:inline-block;}
+.channel-list{overflow-x:auto;display:flex;gap:6px;margin-bottom:8px;}
+a.discord-btn{display:inline-block;padding:10px 16px;background:#1E90FF;color:#fff;border-radius:12px;text-decoration:none;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="card" id="authSection">
+  <h2>🔐 Masuk / Buat Akun</h2>
+  <p>⚠️ Jangan gunakan identitas asli.</p>
+  <input id="nameInput" placeholder="Nama anonim">
+  <input id="passInput" type="password" placeholder="Password">
+  <input id="avatarInput" placeholder="Link Avatar (boleh kosong)">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <button class="btn" onclick="createAccount()">Buat Akun</button>
+    <button class="btn blue-btn" onclick="loginAccount()">Login</button>
+  </div>
+  <p id="authResult"></p>
+</div>
+
+<!-- CHAT -->
+<div id="chatSection" class="card">
+  <div id="me"></div>
+  <div class="channel-list" id="channelList">
+    <div class="channel" onclick="switchChannel('general')">💬 general</div>
+    <div class="channel" onclick="switchChannel('gaming')">🎮 gaming</div>
+    <div class="channel" onclick="switchChannel('announcement')">📢 announcement</div>
+    <div class="channel" onclick="switchChannel('fun')">😂 fun</div>
+    <div class="channel" onclick="switchChannel('music')">🎵 music</div>
+    <div class="channel" onclick="switchChannel('study')">📚 study</div>
+    <div class="channel" onclick="switchChannel('sport')">🏀 sport</div>
+    <div class="channel" onclick="switchChannel('tech')">💻 tech</div>
+    <div class="channel" onclick="switchChannel('random')">🎯 random</div>
+  </div>
+  <div id="chatTitle"># general</div>
+  <div id="chatBox"></div>
+  <input id="chatInput" placeholder="Ketik pesan...">
+  <div style="margin-top:6px;">
+    <button class="btn" onclick="sendMessage()">Kirim</button>
+    <button class="btn" onclick="logout()">Logout</button>
+    <a href="https://discord.gg/2DEwfcbA5h" class="discord-btn" target="_blank">Masuk ke Discord</a>
+  </div>
+</div>
+
+<script>
+/************** STORAGE & DEFAULTS **************/
+let currentUser=null;
+let currentChannel='general';
+
+function initStorage(){
+  if(!localStorage.getItem('cc_profile_list')){
+    localStorage.setItem('cc_profile_list','[]');
+    localStorage.setItem('cc_messages','[]');
+  }
+}
+initStorage();
+
+/************** ACCOUNT **************/
+function createAccount(){
+  const name=document.getElementById('nameInput').value.trim();
+  const pass=document.getElementById('passInput').value.trim();
+  const avatar=document.getElementById('avatarInput').value.trim();
+  if(!name||!pass){alert('Nama dan password wajib diisi'); return;}
+  const profiles=JSON.parse(localStorage.getItem('cc_profile_list')||'[]');
+  if(profiles.find(p=>p.name===name)){alert('Nama sudah dipakai, pilih lain'); return;}
+  const newUser={name,password:pass,avatar:avatar||'',role:'Member'};
+  profiles.push(newUser);
+  localStorage.setItem('cc_profile_list',JSON.stringify(profiles));
+  alert('Akun dibuat! Silakan login.');
+}
+
+function loginAccount(){
+  const name=document.getElementById('nameInput').value.trim();
+  const pass=document.getElementById('passInput').value.trim();
+  const profiles=JSON.parse(localStorage.getItem('cc_profile_list')||'[]');
+  const user=profiles.find(p=>p.name===name);
+  if(!user){alert('Akun tidak ditemukan'); return;}
+  if(user.password!==pass){alert('Password salah'); return;}
+  currentUser=user;
+  document.getElementById('authSection').style.display='none';
+  document.getElementById('chatSection').style.display='block';
+  document.getElementById('me').innerHTML=`<img class="avatar-img" src="${user.avatar||'https://via.placeholder.com/46/5865F2/ffffff?text=MEM'}"> <b>${user.name}</b>`;
+  loadMessages();
+}
+
+/************** CHAT **************/
+function switchChannel(ch){
+  currentChannel=ch;
+  document.getElementById('chatTitle').innerText='# '+ch;
+  loadMessages();
+}
+function loadMessages(){
+  const box=document.getElementById('chatBox');
+  const msgs=JSON.parse(localStorage.getItem('cc_messages')||'[]').filter(m=>m.channel===currentChannel);
+  box.innerHTML=msgs.map(m=>`<div><b>${m.name}</b>: ${m.text}</div>`).join('');
+  box.scrollTop=box.scrollHeight;
+}
+function sendMessage(){
+  const text=document.getElementById('chatInput').value.trim(); if(!text) return;
+  const msgs=JSON.parse(localStorage.getItem('cc_messages')||'[]');
+  msgs.push({name:currentUser.name,text,channel:currentChannel});
+  localStorage.setItem('cc_messages',JSON.stringify(msgs.slice(-100)));
+  document.getElementById('chatInput').value='';
+  loadMessages();
+}
+function logout(){
+  currentUser=null;
+  document.getElementById('chatSection').style.display='none';
+  document.getElementById('authSection').style.display='block';
+}
+</script>
+
+</body>
+</html>
